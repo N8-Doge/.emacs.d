@@ -1,0 +1,4 @@
+# key: sysout
+# name: Eclipse sysout to println
+# --
+System.out.println($0);

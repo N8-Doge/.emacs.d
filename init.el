@@ -42,50 +42,43 @@
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://orgmode.org/elpa/")
-			 ("marmalade" . "https://marmalade-repo.org/packages/")
                          ("gnu" . "https://elpa.gnu.org/packages/")))
 (package-initialize)
 (unless package-archive-contents
  (package-refresh-contents))
 
 ;;; Packages
-;; Install List
-(defvar my-packages '(all-the-icons
-		      company
-		      doom-modeline
-		      flycheck
-		      ivy
-		      meghanada
-		      use-package
-		      yasnippet))
-;; Install Packages
-(dolist (p my-packages)
-  (unless (package-installed-p p)
-    (package-refresh-contents)
-    (package-install p)))
-;; Init use-package
-(require 'use-package)
-(setq use-package-always-ensure t)
-
-;;; Configure Packages
-
-;; Common Lisp Compatability
-(require 'cl-lib)
+;; Use-Package
+(unless (package-installed-p 'use-package) ; Check if use-package is installed
+   (package-install 'use-package))         ; Install use-package
+(require 'use-package)                     ; Init use-package
+(setq use-package-always-ensure t)         ; Make sure packages install
 
 ;; All-The-Icons
 (use-package all-the-icons)
 (unless (member "all-the-icons" (font-family-list))
   (all-the-icons-install-fonts t))
 
-;; Company-Mode
+;; Company
 (use-package company
   :diminish
   :init (global-company-mode))
+
+;; Cl-Lib
+(use-package cl-lib)
 
 ;; Doom-Modeline
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :custom ((doom-modeline-height 15)))
+
+;; Elcord
+(use-package elcord
+  :init (elcord-mode)
+  :custom (elcord-display-buffer-details nil))
+
+;; Flycheck
+(use-package flycheck)
 
 ;; Ivy
 (use-package ivy
