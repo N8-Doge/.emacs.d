@@ -14,8 +14,17 @@
 (setq large-file-warning-threshold 100000000) ; Warn for large files limit
 
 ;; Appearance
-(load-theme 'wombat)
-(set-face-attribute 'default nil :font "Consolas") ; :height (int)
+;(load-theme 'wombat)
+(set-face-attribute 'default nil :font "Fira Code Retina") ; :height (int)
+
+;; Line numbers
+(column-number-mode)
+(global-display-line-numbers-mode t)
+(dolist (mode '(org-mode-hook
+                term-mode-hook
+		shell-mode-hook
+                eshell-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 ;;; Behavior Tweaks
 
@@ -26,7 +35,7 @@
 (fset 'yes-or-no-p 'y-or-n-p)
 
 ;; Custom.el
-(setq custom-file "~/.emacs.d/custom-settings.el")
+(setq custom-file "~/.emacs.d/custom.el")
 (load custom-file t)
 
 ;; Auto Save to /tmp
@@ -45,15 +54,19 @@
                          ("gnu" . "https://elpa.gnu.org/packages/")))
 (package-initialize)
 (unless package-archive-contents
- (package-refresh-contents))
+ (package-refresh-contents))     ; Refresh archive, run periodically
 
-;;; Packages
+;;; Package Managers
 ;; Use-Package
 (unless (package-installed-p 'use-package) ; Check if use-package is installed
    (package-install 'use-package))         ; Install use-package
 (require 'use-package)                     ; Init use-package
 (setq use-package-always-ensure t)         ; Make sure packages install
 
+;; Quelpa
+(use-package quelpa)
+
+;;; Packages
 ;; All-The-Icons
 (use-package all-the-icons)
 (unless (member "all-the-icons" (font-family-list))
@@ -62,31 +75,72 @@
 ;; Company
 (use-package company
   :diminish
-  :init (global-company-mode))
+  :init (global-company-mode)
+  :custom (company-idle-delay 0.3))
 
 ;; Cl-Lib
 (use-package cl-lib)
+
+;; Counsel
+(use-package counsel)
 
 ;; Doom-Modeline
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :custom ((doom-modeline-height 15)))
 
+;; Doom-Themes
+(use-package doom-themes
+  :init (load-theme 'doom-palenight))
+
 ;; Elcord
 (use-package elcord
   :init (elcord-mode)
-  :custom (elcord-display-buffer-details nil))
+  :config
+    (defun elcord--details-and-state ()
+      "No line numbers"
+      (let ((activity (list
+        (cons "details" (format "Editing %s" (buffer-name)))
+        (cons "state" (format "Major mode: %s" (elcord--mode-text))))))
+        (when elcord-display-elapsed
+          (push (list "timestamps" (cons "start" elcord--startup-time)) activity))
+        activity))
+  :custom ((elcord-use-major-mode-as-main-icon 't)))
 
 ;; Flycheck
-(use-package flycheck)
+(use-package flycheck
+  :hook (java-mode . flycheck-mode))
+
+;; Helpful
+(use-package helpful
+  :custom
+  (counsel-describe-function-function #'helpful-callable)
+  (counsel-describe-variable-function #'helpful-variable))
 
 ;; Ivy
 (use-package ivy
   :diminish
-  :config (ivy-mode 1))
+  :config (ivy-mode 1)
+  :bind (("C-s" . swiper))
+  :custom (ivy-count-format "(%d/%d) "))
+
+;; Ivy-Rich
+(use-package ivy-rich
+  :init (ivy-rich-mode 1))
 
 ;; Meghanada
-(use-package meghanada)
+(use-package meghanada
+  :hook (java-mode . meghanada-mode))
+
+;; Rainbow Delimiters
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+;; Which-Key
+(use-package which-key
+  :diminish
+  :init (which-key-mode)
+  :custom (which-key-idle-delay 5))
 
 ;; Yasnippet
 (use-package yasnippet
@@ -99,8 +153,6 @@
 ;;; Language Hooks
 (add-hook 'java-mode-hook
           (lambda ()
-            (meghanada-mode t)
-            (flycheck-mode +1)
             (setq c-basic-offset 2)
             (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
 
