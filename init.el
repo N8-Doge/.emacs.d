@@ -65,6 +65,8 @@
 
 ;; Quelpa
 (use-package quelpa)
+(use-package quelpa-use-package
+  :custom (quelpa-use-package-activate-advice))
 
 ;;; Packages
 ;; All-The-Icons
@@ -76,7 +78,16 @@
 (use-package company
   :diminish
   :init (global-company-mode)
+  :config (add-to-list 'company-backends 'company-powershell)
   :custom (company-idle-delay 0.3))
+
+;; Company-Powershell
+(use-package company-powershell
+  :ensure quelpa
+  :quelpa (company-powershell
+	    :fetcher github
+	    :repo "N8-Doge/company-powershell"
+	    :files ":defaults" "*.ps1"))
 
 ;; Cl-Lib
 (use-package cl-lib)
@@ -87,7 +98,7 @@
 ;; Doom-Modeline
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)))
+  :custom (doom-modeline-height 15))
 
 ;; Doom-Themes
 (use-package doom-themes
@@ -114,13 +125,13 @@
 ;; Helpful
 (use-package helpful
   :custom
-  (counsel-describe-function-function #'helpful-callable)
-  (counsel-describe-variable-function #'helpful-variable))
+    (counsel-describe-function-function #'helpful-callable)
+    (counsel-describe-variable-function #'helpful-variable))
 
 ;; Ivy
 (use-package ivy
   :diminish
-  :config (ivy-mode 1)
+  :init (ivy-mode 1)
   :bind (("C-s" . swiper))
   :custom (ivy-count-format "(%d/%d) "))
 
@@ -131,6 +142,10 @@
 ;; Meghanada
 (use-package meghanada
   :hook (java-mode . meghanada-mode))
+
+;; Powershell
+(use-package powershell
+  :custom (powershell-indent 2))
 
 ;; Rainbow Delimiters
 (use-package rainbow-delimiters
@@ -145,16 +160,11 @@
 ;; Yasnippet
 (use-package yasnippet
   :diminish
-  :config
-  (add-to-list 'load-path
-              "~/.emacs.d/plugins/yasnippet")
-  (yas-global-mode 1))
+  :init (yas-global-mode 1)
+  :config (add-to-list 'load-path "~/.emacs.d/plugins/yasnippet"))
 
 ;;; Language Hooks
 (add-hook 'java-mode-hook
-          (lambda ()
-            (setq c-basic-offset 2)
-            (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
-
-;;; End init.el
-(provide 'init)
+  (lambda ()
+    (setq c-basic-offset 2)
+    (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
