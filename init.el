@@ -1,21 +1,26 @@
-;;; Settings
+;; Startup Optimizations
+(setq gc-cons-threshold most-positive-fixnum)
+(setq gc-cons-percentage 0.6)
+
 ;; Window Settings
-;(menu-bar-mode -1)  ; Disable the menu bar
-(scroll-bar-mode -1) ; Disable visible scrollbar
-(tooltip-mode -1)    ; Disable tooltips
-(set-fringe-mode 4)  ; Decrease sidebar width
-(tool-bar-mode -1)   ; Disable the toolbar
+(menu-bar-mode -1)        ; Disable the menu bar
+(scroll-bar-mode -1)      ; Disable visible scrollbar
+(tooltip-mode -1)         ; Disable tooltips
+(set-fringe-mode 4)       ; Decrease sidebar width
+(tool-bar-mode -1)        ; Disable the toolbar
+(toggle-frame-fullscreen) ; Start in fullscreen
+(set-frame-parameter (selected-frame) 'alpha '(95 . 95))
 
 ;; Feature Settings
 (setq inhibit-startup-message t)              ; Disable landing page
 (setq ring-bell-function 'ignore)             ; Disable alarms
-(setq gc-cons-threshold 20000000)             ; Slower garbage collection
 (setq make-backup-files nil)                  ; Do not backup files
 (setq large-file-warning-threshold 100000000) ; Warn for large files limit
 
-;; Appearance
-;(load-theme 'wombat)
-(set-face-attribute 'default nil :font "Fira Code Retina") ; :height (int)
+;; Variable Fonts
+(set-face-attribute 'default nil :font "Fira Code Retina:antialias=subpixel")
+(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina")
+(set-face-attribute 'variable-pitch nil :font "Source Sans Pro" :height 120)
 
 ;; Line numbers
 (column-number-mode)
@@ -23,10 +28,9 @@
 (dolist (mode '(org-mode-hook
                 term-mode-hook
 		shell-mode-hook
-                eshell-mode-hook))
+                eshell-mode-hook
+		pdf-view-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
-;;; Behavior Tweaks
 
 ;; Esc to C-g
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
@@ -47,7 +51,7 @@
 ;; Dired no new buffer on 'a'
 (put 'dired-find-alternate-file 'disabled nil)
 
-;;; Load Package Sources
+;; Package
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://orgmode.org/elpa/")
@@ -56,7 +60,6 @@
 (unless package-archive-contents
  (package-refresh-contents))     ; Refresh archive, run periodically
 
-;;; Package Managers
 ;; Use-Package
 (unless (package-installed-p 'use-package) ; Check if use-package is installed
    (package-install 'use-package))         ; Install use-package
@@ -64,9 +67,10 @@
 (setq use-package-always-ensure t)         ; Make sure packages install
 
 ;; Quelpa
-(use-package quelpa)
+(use-package quelpa
+  :custom (quelpa-update-melpa-p nil))
 (use-package quelpa-use-package
-  :custom (quelpa-use-package-activate-advice))
+  :config (quelpa-use-package-activate-advice))
 
 ;;; Packages
 ;; All-The-Icons
@@ -122,6 +126,11 @@
 (use-package flycheck
   :hook (java-mode . flycheck-mode))
 
+;; GCMH
+(use-package gcmh
+  :diminish
+  :hook (emacs-startup . gcmh-mode))
+
 ;; Helpful
 (use-package helpful
   :custom
@@ -143,6 +152,32 @@
 (use-package meghanada
   :hook (java-mode . meghanada-mode))
 
+;; Mixed-Pitch
+(use-package mixed-pitch
+  :custom (mixed-pitch-set-height 12)
+  :hook (org-mode . mixed-pitch-mode))
+
+;; Org
+(use-package org
+  :custom (org-hide-emphasis-markers t))
+
+;; Org-Bullets
+(use-package org-bullets
+  :hook (org-mode . org-bullets-mode))
+
+;; PDF-Continuous-Scroll-Mode
+;(use-package pdf-continuous-scroll-mode
+; :after (pdf-tools)
+; :ensure quelpa
+; :quelpa (pdf-continuous-scroll-mode
+;    :fetcher github
+;    :repo "dalanicolai/pdf-continuous-scroll-mode.el")
+; :hook (pdf-view-mode-hook . pdf-continuous-scroll-mode))
+
+;; PDF-tools
+(use-package pdf-tools
+  :config (pdf-loader-install))
+
 ;; Powershell
 (use-package powershell
   :custom (powershell-indent 2))
@@ -163,8 +198,8 @@
   :init (yas-global-mode 1)
   :config (add-to-list 'load-path "~/.emacs.d/plugins/yasnippet"))
 
-;;; Language Hooks
+;; Java Hook
 (add-hook 'java-mode-hook
-  (lambda ()
-    (setq c-basic-offset 2)
-    (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
+	  (lambda ()
+	    (setq c-basic-offset 2)
+	    (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))

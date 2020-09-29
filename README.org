@@ -1,10 +1,20 @@
 * N8-Doge's Emacs Config
+  Based on =daviwil/runemacs= and =munen/emacs.d=, thanks to both for their tutorials  
 
-Based on =daviwil/runemacs= and =munen/emacs.d=, thanks to both for their tutorials
+** Install
+   Run in =.emacs.d=:  
+   =git clone https://github.com/N8-Doge/.emacs.d.git=
 
-*Install*
-Run in =.emacs.d=:
-=git clone https://github.com/N8-Doge/.emacs.d.git=
+** Windows
+   To generate =.emacs.d= in the home directory, set =HKCU:\SOFTWARE\GNU\Emacs\HOME= to the path
 
-*Windows*
-To generate =.emacs.d= in the home directory, set =HKCU:\SOFTWARE\GNU\Emacs\HOME= to the path
+   Use msys2, install the following for pdf-tools
+   #+BEGIN_SRC 
+   pacman -Syu --noconfirm;
+   pacman -S base-devel --noconfirm;
+   pacman -S mingw-w64-x86_64-toolchain --noconfirm;
+   pacman -S mingw-w64-x86_64-zlib --noconfirm;
+   pacman -S mingw-w64-x86_64-libpng --noconfirm;
+   pacman -S mingw-w64-x86_64-poppler --noconfirm;
+   pacman -S mingw-w64-x86_64-imagemagick --noconfirm;
+   #+END_SRC
