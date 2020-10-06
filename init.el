@@ -56,9 +56,8 @@
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://orgmode.org/elpa/")
                          ("gnu" . "https://elpa.gnu.org/packages/")))
-(package-initialize)
-(unless package-archive-contents
- (package-refresh-contents))     ; Refresh archive, run periodically
+(when (version< emacs-version "27.0")
+  (package-initialize))
 
 ;; Use-Package
 (unless (package-installed-p 'use-package) ; Check if use-package is installed
@@ -68,9 +67,11 @@
 
 ;; Quelpa
 (use-package quelpa
-  :custom (quelpa-update-melpa-p nil))
-(use-package quelpa-use-package
-  :config (quelpa-use-package-activate-advice))
+  :custom
+  (quelpa-update-melpa-p nil)
+  (quelpa-upgrade-interval 7)
+  :hook (after-init . quelpa-upgrade-all-maybe))
+(use-package quelpa-use-package)
 
 ;;; Packages
 ;; All-The-Icons
@@ -94,7 +95,8 @@
 	    :files ":defaults" "*.ps1"))
 
 ;; Cl-Lib
-(use-package cl-lib)
+(when (version< emacs-version "27.0")
+  (use-package cl-lib))
 
 ;; Counsel
 (use-package counsel)
@@ -152,27 +154,40 @@
 (use-package meghanada
   :hook (java-mode . meghanada-mode))
 
-;; Mixed-Pitch
-(use-package mixed-pitch
-  :custom (mixed-pitch-set-height 12)
-  :hook (org-mode . mixed-pitch-mode))
-
 ;; Org
 (use-package org
-  :custom (org-hide-emphasis-markers t))
+  :custom
+  (org-log-done t)
+  (org-ellipsis " ▾"))
+(define-key global-map "\C-cl" 'org-store-link)
+(define-key global-map "\C-ca" 'org-agenda)
+(require 'org-tempo)
+(dolist (face '((org-level-1 . 1.2)
+                (org-level-2 . 1.1)
+                (org-level-3 . 1.05)
+                (org-level-4 . 1.0)
+                (org-level-5 . 1.1)
+                (org-level-6 . 1.1)
+                (org-level-7 . 1.1)
+                (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font "Source Sans Pro" :weight 'regular :height (cdr face)))
 
 ;; Org-Bullets
 (use-package org-bullets
   :hook (org-mode . org-bullets-mode))
 
+;; Org-Make-TOC
+(use-package org-make-toc
+  :hook (org-mode . org-make-toc))
+
 ;; PDF-Continuous-Scroll-Mode
-;(use-package pdf-continuous-scroll-mode
-; :after (pdf-tools)
-; :ensure quelpa
-; :quelpa (pdf-continuous-scroll-mode
-;    :fetcher github
-;    :repo "dalanicolai/pdf-continuous-scroll-mode.el")
-; :hook (pdf-view-mode-hook . pdf-continuous-scroll-mode))
+(use-package pdf-continuous-scroll-mode
+  :after (pdf-tools)
+  :ensure quelpa
+  :quelpa (pdf-continuous-scroll-mode
+	   :fetcher github
+	   :repo "dalanicolai/pdf-continuous-scroll-mode.el")
+  :hook (pdf-view-mode . pdf-continuous-scroll-mode))
 
 ;; PDF-tools
 (use-package pdf-tools
@@ -203,3 +218,9 @@
 	  (lambda ()
 	    (setq c-basic-offset 2)
 	    (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
+
+;; Org Hook
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (visual-line-mode)
+	    (org-indent-mode)))
