@@ -1,0 +1,428 @@
+* N8's Emacs Config
+
+This config will not be backwards compatible, and is concerned mainly with readability and not startup speed.
+
+* Early Init
+
+Early-Init.el executes when most things are not loaded, so disabling things there speeds startup. These lines are not migrated to the file itself.
+
+#+begin_example emacs-lisp
+  ;; Prevent package from initializing
+  (setq package-enable-at-startup nil)
+
+  ;; Disable visual components
+  (setq tooltip-mode nil
+        tool-bar-mode nil
+        menu-bar-mode nil
+        scroll-bar-mode nil)
+
+  ;; Set other GUI components
+  (set-fringe-mode 4)
+
+  ;; Set garbage collection high
+  (setq gc-cons-threshold most-positive-fixnum
+        gc-cons-percentage 0.6)
+
+  ;; Don't resize frame before font load
+  (setq frame-inhibit-implied-resize t)
+
+  ;; Don't compile packages at runtime
+  (setq comp-deferred-compilation nil)
+#+end_example
+
+* Package Management
+
+Individual packages are set up in their respective sections.
+
+** Set up repositories
+#+begin_src emacs-lisp
+  (require 'package)
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                           ("org" . "https://orgmode.org/elpa/")
+                           ("gnu" . "https://elpa.gnu.org/packages/")))
+  (package-initialize)
+#+end_src
+
+** Set up use-package
+
+Use-Package helps to condense package configurations.
+
+#+begin_src emacs-lisp
+  (unless (package-installed-p 'use-package)
+     (package-install 'use-package))
+  (require 'use-package)
+  (setq use-package-always-ensure t)
+#+end_src
+
+** Set up Quelpa
+
+#+begin_src emacs-lisp
+  (use-package quelpa
+    :custom
+    (quelpa-update-melpa-p nil)
+    (quelpa-upgrade-interval 7)
+    :hook (after-init . quelpa-upgrade-all-maybe))
+  (use-package quelpa-use-package)
+#+end_src
+
+* Default Settings
+
+Anything pre-defined in Emacs to be changed
+
+** Offload Custom-Variable to Custom.el
+
+#+begin_src emacs-lisp
+  (setq custom-file "~/.emacs.d/custom.el")
+  (load custom-file t)
+#+end_src
+
+** Do not backup files
+
+#+begin_src emacs-lisp
+  (setq make-backup-files nil)
+#+end_src
+
+** Auto-Save in temp directory
+
+#+begin_src emacs-lisp
+  (setq backup-directory-alist
+        `((".*" . ,temporary-file-directory)))
+  (setq auto-save-file-name-transforms
+        `((".*" ,temporary-file-directory t)))
+#+end_src
+
+** Y/N instead of Yes/No
+
+#+begin_src emacs-lisp
+  (fset 'yes-or-no-p 'y-or-n-p)
+#+end_src
+
+** Disable startup messages
+
+#+begin_src emacs-lisp
+  (setq inhibit-splash-screen t
+        inhibit-startup-message t)
+#+end_src
+
+** Disable bell
+
+#+begin_src emacs-lisp
+  (setq ring-bell-function 'ignore)
+#+end_src
+
+** Disable scroll bar
+
+Scroll bar cannot be disabled in =early-init.el=
+
+#+begin_src emacs-lisp
+  (scroll-bar-mode -1)
+#+end_src
+
+** Start Fullscreen
+
+#+begin_src emacs-lisp
+  (toggle-frame-fullscreen)
+#+end_src
+
+* Keybindings
+
+Anything related to custom keybindings
+
+** Esc as quit
+
+#+begin_src emacs-lisp
+  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+#+end_src
+
+** Which-Key
+
+#+begin_src emacs-lisp
+  (use-package which-key
+    :diminish
+    :init (which-key-mode)
+    :custom (which-key-idle-delay 3))
+#+end_src
+
+* Visuals
+
+Configure all of the visual elements
+
+** Window Alpha
+
+Lowers the alpha of the background
+
+#+begin_src emacs-lisp
+  (set-frame-parameter (selected-frame) 'alpha '(95 . 95))
+#+end_src
+
+** Line Numbers
+
+Enable line numbers for certain modes
+
+#+begin_src emacs-lisp
+  (column-number-mode)
+  (global-display-line-numbers-mode t)
+  (dolist (mode '(org-mode-hook
+                  term-mode-hook
+                  shell-mode-hook
+                  eshell-mode-hook
+                  pdf-view-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+#+end_src
+
+** All-The-Icons
+
+Dependency for =doom-modeline=.
+
+#+begin_src emacs-lisp
+  (use-package all-the-icons)
+  (unless (member "all-the-icons" (font-family-list))
+    (all-the-icons-install-fonts t))
+#+end_src
+
+** Doom-Modeline
+
+#+begin_src emacs-lisp
+  (use-package doom-modeline
+    :init (doom-modeline-mode 1)
+    :custom (doom-modeline-height 15))
+#+end_src
+
+** Doom-Themes
+
+#+begin_src emacs-lisp
+  (use-package doom-themes
+    :init (load-theme 'doom-palenight))
+#+end_src
+
+** Rainbow-Delimiters
+
+#+begin_src emacs-lisp
+  (use-package rainbow-delimiters
+    :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+
+** Mixed Pitch Fonts
+
+#+begin_src emacs-lisp
+(set-face-attribute 'default nil :font "Fira Code Retina" :height 110)
+
+;; Set the fixed pitch face
+(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 110)
+
+;; Set the variable pitch face
+(set-face-attribute 'variable-pitch nil :font "Source Sans Pro" :height 120 :weight 'regular)
+#+end_src
+
+* Ivy
+
+** Counsel
+
+Swap normal Emacs buffer navigation with Counsel
+
+#+begin_src emacs-lisp
+  (use-package counsel
+    :bind (("M-x" . counsel-M-x)
+           ("C-x b" . counsel-ibuffer)
+           ("C-x C-f" . counsel-find-file)
+           :map minibuffer-local-map
+           ("C-r" . 'counsel-minibuffer-history)))
+#+end_src
+
+** Ivy
+
+#+begin_src emacs-lisp
+  (use-package ivy
+    :diminish
+    :init (ivy-mode 1)
+    :bind (("C-s" . swiper))
+    :custom (ivy-count-format "(%d/%d) "))
+#+end_src
+
+** Ivy-Rich
+
+#+begin_src emacs-lisp
+  (use-package ivy-rich
+    :init (ivy-rich-mode 1))
+#+end_src
+
+* Autocompletion
+
+** Company
+
+Company is an autocompletion tool for Emacs
+
+#+begin_src emacs-lisp
+  (use-package company
+    :diminish
+    :init (global-company-mode)
+    :config (add-to-list 'company-backends 'company-powershell)
+    :custom (company-idle-delay 0.3))
+#+end_src
+
+** Yasnippet
+
+Yasnippet allows for code block insertion based on templates
+
+#+begin_src emacs-lisp
+  (use-package yasnippet
+    :diminish
+    :init (yas-global-mode 1)
+    :config (add-to-list 'load-path "~/.emacs.d/plugins/yasnippet"))
+#+end_src
+
+** Flycheck
+
+Flycheck marks improper syntax
+
+#+begin_src emacs-lisp
+  (use-package flycheck
+    :hook (java-mode . flycheck-mode))
+#+end_src
+
+** Meghanada
+
+Java method provider using Company and Flycheck
+
+#+begin_src emacs-lisp
+  (use-package meghanada
+    :hook (java-mode . meghanada-mode))
+#+end_src
+
+** Company-Powershell
+
+A powershell backend for Company
+
+#+begin_src emacs-lisp
+  (use-package company-powershell
+    :ensure quelpa
+    :quelpa (company-powershell
+              :fetcher github
+              :repo "N8-Doge/company-powershell"
+              :files ":defaults" "*.ps1"))
+#+end_src
+
+* PDF Viewing
+
+** PDF-Tools
+
+#+begin_src emacs-lisp
+  (use-package pdf-tools
+    :config (pdf-loader-install))
+#+end_src
+
+** PDF-Continuous-Scroll-Mode
+
+#+begin_src emacs-lisp
+  (use-package pdf-continuous-scroll-mode
+    :after (pdf-tools)
+    :ensure quelpa
+    :quelpa (pdf-continuous-scroll-mode
+             :fetcher github
+             :repo "dalanicolai/pdf-continuous-scroll-mode.el")
+    :hook (pdf-view-mode . pdf-continuous-scroll-mode))
+#+end_src
+
+* Org
+
+  Code stolen from =daviwil/emacs-from-scratch=
+
+  #+begin_src emacs-lisp
+  (require 'org-tempo)
+  (defun efs/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (visual-line-mode 1))
+  
+  (defun efs/org-font-setup ()
+    ;; Replace list hyphen with dot
+    (font-lock-add-keywords 'org-mode
+    '(("^ *\\([-]\\) "
+    (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+  
+    ;; Set faces for heading levels
+    (dolist (face '((org-level-1 . 1.2)
+    (org-level-2 . 1.1)
+    (org-level-3 . 1.05)
+    (org-level-4 . 1.0)
+    (org-level-5 . 1.1)
+    (org-level-6 . 1.1)
+    (org-level-7 . 1.1)
+    (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font "Source Sans Pro" :weight 'regular :height (cdr face)))
+  
+  ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+  
+  (use-package org
+    :hook (org-mode . efs/org-mode-setup)
+    :config
+    (setq org-ellipsis " ▾")
+    (efs/org-font-setup))
+
+  (use-package org-bullets
+    :after org
+    :hook (org-mode . org-bullets-mode)
+    :custom
+    (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+  (defun efs/org-mode-visual-fill ()
+    (setq visual-fill-column-width 100
+          visual-fill-column-center-text t)
+    (visual-fill-column-mode 1))
+
+  (use-package visual-fill-column
+    :hook (org-mode . efs/org-mode-visual-fill))
+#+end_src
+
+** Org-Pomodoro
+
+Call =M-x org-pomodoro= on a TODO item to start Pomodoro
+
+#+begin_src emacs-lisp
+  (use-package org-pomodoro
+    :after org)
+#+end_src
+
+* Misc.
+
+** GCMH
+
+#+begin_src emacs-lisp
+  (use-package gcmh
+    :diminish
+    :hook (emacs-startup . gcmh))
+#+end_src
+
+** Powershell
+
+#+begin_src emacs-lisp
+  (use-package powershell
+    :custom (powershell-indent 2))
+#+end_src
+
+** Elcord
+
+Elcord is an Emacs rich presence for Discord
+
+#+begin_src emacs-lisp
+  (use-package elcord
+    :init (elcord-mode)
+    :config
+      (defun elcord--details-and-state ()
+        "No line numbers"
+        (let ((activity (list
+          (cons "details" (format "Editing %s" (buffer-name)))
+          (cons "state" (format "Major mode: %s" (elcord--mode-text))))))
+          (when elcord-display-elapsed
+            (push (list "timestamps" (cons "start" elcord--startup-time)) activity))
+          activity))
+    :custom (elcord-use-major-mode-as-main-icon 't))
+#+end_src
+

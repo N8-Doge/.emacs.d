@@ -1,7 +1,21 @@
-;; Startup Optimizations
-(setq gc-cons-threshold most-positive-fixnum)
+;; Prevent package from initializing
+(setq package-enable-at-startup nil)
 
-;; DisableUnnecessaryInterface
-(menu-bar-mode -1)
-(push '(tool-bar-lines . 0) default-frame-alist)
-(push '(vertical-scroll-bars) default-frame-alist)
+;; Disable visual components
+(setq tooltip-mode nil
+      tool-bar-mode nil
+      menu-bar-mode nil
+      scroll-bar-mode nil)
+
+;; Set other GUI components
+(set-fringe-mode 4)
+
+;; Set garbage collection high
+(setq gc-cons-threshold most-positive-fixnum
+      gc-cons-percentage 0.6)
+
+;; Don't resize frame before font load
+(setq frame-inhibit-implied-resize t)
+
+;; Don't compile packages at runtime
+(setq comp-deferred-compilation nil)
