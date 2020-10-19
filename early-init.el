@@ -5,10 +5,10 @@
 (setq tooltip-mode nil
       tool-bar-mode nil
       menu-bar-mode nil
-      scroll-bar-mode nil)
+      initial-scratch-message nil)
 
 ;; Set other GUI components
-(set-fringe-mode 4)
+(set-fringe-mode 10)
 
 ;; Set garbage collection high
 (setq gc-cons-threshold most-positive-fixnum
