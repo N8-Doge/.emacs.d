@@ -4,11 +4,10 @@ This config will not be backwards compatible, and is concerned mainly with reada
 I use =use-package= in order to arrange individual packages, function userspace is =my/= unless code is borrowed.
 ** In Progress
 *** TODO Make cursor dependent on insert mode
-***
 *** TODO Configure projectile and project directories
 *** TODO Configure Treemacs and Centaur to work with projectile
 *** TODO Configure Centaur to work with ivy
-
+*** TODO Port config into WSL/clean up Windows dependencies
 * Early Init
 
 Early-Init.el executes when most things are not loaded, so disabling things there speeds startup. These lines are not migrated to the file itself.
@@ -66,7 +65,7 @@ Use-Package helps to condense package configurations.
 
 #+begin_src emacs-lisp
   (unless (package-installed-p 'use-package)
-     (package-install 'use-package))
+    (package-install 'use-package))
   (require 'use-package)
   (setq use-package-always-ensure t)
 #+end_src
@@ -76,7 +75,8 @@ Use-Package helps to condense package configurations.
 #+begin_src emacs-lisp
   (unless (package-installed-p 'quelpa)
     (with-temp-buffer
-      (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+      (url-insert-file-contents
+       "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
       (eval-buffer)
       (quelpa-self-upgrade)))
   (use-package quelpa
@@ -88,10 +88,24 @@ Use-Package helps to condense package configurations.
 
 Anything pre-defined in Emacs to be changed
 
-** Offload Custom-Variable to Custom.el
+** Keep .emacs.d clean
 
 #+begin_src emacs-lisp
-  (setq custom-file "~/.emacs.d/custom.el")
+  ;; Keep transient cruft out of ~/.emacs.d/
+  (setq user-emacs-directory "~/.cache/emacs/"
+        backup-directory-alist `(("." . ,(expand-file-name "backups" user-emacs-directory)))
+        url-history-file (expand-file-name "url/history" user-emacs-directory)
+        auto-save-list-file-prefix
+        (expand-file-name "auto-save-list/.saves-" user-emacs-directory)
+        projectile-known-projects-file
+        (expand-file-name "projectile-bookmarks.eld" user-emacs-directory))
+
+  ;; Keep customization settings in a temporary file (thanks Ambrevar!)
+  (setq custom-file
+        (if (boundp 'server-socket-dir)
+            (expand-file-name "custom.el" server-socket-dir)
+          (expand-file-name
+           (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
   (load custom-file t)
 #+end_src
 
@@ -179,13 +193,13 @@ Anything additive to the user
 #+begin_src emacs-lisp
   (use-package helpful
     :custom
-      (counsel-describe-function-function #'helpful-callable)
-      (counsel-describe-variable-function #'helpful-variable)
+    (counsel-describe-function-function #'helpful-callable)
+    (counsel-describe-variable-function #'helpful-variable)
     :bind
-      ([remap describe-function] . counsel-describe-function)
-      ([remap describe-command] . helpful-command)
-      ([remap describe-variable] . counsel-describe-variable)
-      ([remap describe-key] . helpful-key))
+    ([remap describe-function] . counsel-describe-function)
+    ([remap describe-command] . helpful-command)
+    ([remap describe-variable] . counsel-describe-variable)
+    ([remap describe-key] . helpful-key))
 #+end_src
 
 ** GCMH
@@ -234,6 +248,13 @@ Enable line numbers for certain modes
     (add-hook mode (lambda () (display-line-numbers-mode 0))))
 #+end_src
 
+** Word Count
+
+#+begin_src emacs-lisp
+  (use-package wc-mode
+    :hook (text-mode . wc-mode))
+#+end_src
+
 ** All-The-Icons
 
 Dependency for =doom-modeline=.
@@ -242,6 +263,31 @@ Dependency for =doom-modeline=.
   (use-package all-the-icons)
   (unless (member "all-the-icons" (font-family-list))
     (all-the-icons-install-fonts t))
+#+end_src
+
+** Centaur-Tabs
+
+#+begin_src emacs-lisp
+  (use-package centaur-tabs
+    :demand
+    :config
+    (centaur-tabs-mode t)
+    (centaur-tabs-change-fonts "Fira Code Retina" 120)
+    :custom
+    (centaur-tabs-set-icons t)
+    (centaur-tabs-height 36)
+    (centaur-tabs-gray-out-icons 'buffer)
+    (centaur-tabs-set-bar 'over)
+    (centaur-tabs-show-navigation-buttons t)
+    (centaur-tabs-down-tab-text " ▾ ")
+    (centaur-tabs-backward-tab-text " < ")
+    (centaur-tabs-forward-tab-text " > ")
+    :bind
+    ("C-<prior>" . centaur-tabs-backward)
+    ("C-<next>" . centaur-tabs-forward)
+    ("C-c t s" . centaur-tabs-counsel-switch-group)
+    ("C-c t p" . centaur-tabs-group-by-projectile-project)
+    ("C-c t g" . centaur-tabs-group-buffer-groups))
 #+end_src
 
 ** Doom-Modeline
@@ -255,8 +301,24 @@ Dependency for =doom-modeline=.
 ** Doom-Themes
 
 #+begin_src emacs-lisp
-  (use-package doom-themes
-    :init (load-theme 'doom-palenight))
+  (use-package doom-themes)
+#+end_src
+
+** Minions
+
+Minions organizes the minor modes listed on the modeline
+
+#+begin_src emacs-lisp
+  (use-package minions
+    :init (minions-mode 1))
+#+end_src
+
+** Nyan-Mode
+
+#+begin_src emacs-lisp
+  (use-package nyan-mode
+    :config (nyan-mode 1)
+    :custom (nyan-animate-nyancat t))
 #+end_src
 
 ** Rainbow-Delimiters
@@ -266,37 +328,29 @@ Dependency for =doom-modeline=.
     :hook (prog-mode . rainbow-delimiters-mode))
 #+end_src
 
-** Centaur-Tabs
+** Theme-Looper
 
 #+begin_src emacs-lisp
-  (use-package centaur-tabs
-    :demand
+  (use-package theme-looper
     :config
-      (centaur-tabs-mode t)
-      (centaur-tabs-change-fonts "Fira Code Retina" 120)
-    :custom
-      (centaur-tabs-set-icons t)
-      (centaur-tabs-height 36)
-      (centaur-tabs-gray-out-icons 'buffer)
-      (centaur-tabs-set-bar 'over)
-      (centaur-tabs-show-navigation-buttons t)
-      (centaur-tabs-down-tab-text " ▾ ")
-      (centaur-tabs-backward-tab-text " < ")
-      (centaur-tabs-forward-tab-text " > ")
-    :bind
-      ("C-<prior>" . centaur-tabs-backward)
-      ("C-<next>" . centaur-tabs-forward)
-      ("C-c t s" . centaur-tabs-counsel-switch-group)
-      ("C-c t p" . centaur-tabs-group-by-projectile-project)
-      ("C-c t g" . centaur-tabs-group-buffer-groups))
-#+end_src
-
-** Nyan-Mode
-
-#+begin_src emacs-lisp
-  (use-package nyan-mode
-    :config (nyan-mode 1)
-    :custom (nyan-animate-nyancat t))
+    (theme-looper-set-favorite-themes
+     '(doom-one
+       doom-vibrant
+       doom-city-lights
+       doom-dark+
+       doom-dracula
+       doom-horizon
+       doom-iosvkem
+       doom-material
+       doom-molokai
+       doom-nord
+       doom-opera
+       doom-palenight
+       doom-snazzy
+       doom-spacegrey
+       doom-tomorrow-night
+       doom-wilmersdorf))
+    (theme-looper-enable-random-theme))
 #+end_src
 
 * Org
@@ -319,49 +373,77 @@ Code borrowed from prot, enable line cursor in org mode
         (kill-local-variable `,local))))
 #+end_src
 
+** Ox
+
+#+begin_src emacs-lisp
+  (require 'ox)
+#+end_src
+
 ** Org
 
   Configure Org first so that if something further down the config breaks, it can be repaired with the org config working. Code stolen from =daviwil/emacs-from-scratch=
 
-  #+begin_src emacs-lisp
+#+begin_src emacs-lisp
   (defun efs/org-mode-setup ()
     (org-indent-mode)
     (variable-pitch-mode 1)
     (visual-line-mode 1)
-    (my/cursor-type-mode 1))
+    (my/cursor-type-mode 1)
+    (setq org-ellipsis " ▾"
+          org-src-tab-acts-natively nil
+          org-src-fontify-natively nil)
+    ;;(font-lock-add-keywords 'org-mode
+    ;;'(("^ *\\([-]\\) "
+    ;;(0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "●"))))))
+
+    ;; Set faces for heading levels
+    (dolist
+        (face '(
+                (org-level-1 . 1.3)
+                (org-level-2 . 1.15)
+                (org-level-3 . 1.1)
+                (org-level-4 . 1.0)
+                (org-level-5 . 1.1)
+                (org-level-6 . 1.1)
+                (org-level-7 . 1.1)
+                (org-level-8 . 1.1)))
+      (set-face-attribute (car face) nil
+                          :font "Source Sans Pro"
+                          :weight 'regular
+                          :height (cdr face)))
+
+    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+    (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-table nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
 
   (use-package org
-    :hook (org-mode . efs/org-mode-setup)
-    :config
-      (setq org-ellipsis " ▾")
-      ;;(font-lock-add-keywords 'org-mode
-      ;;'(("^ *\\([-]\\) "
-      ;;(0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "●"))))))
+    :hook
+    (org-mode . efs/org-mode-setup)
+    (theme-looper-post-switch . efs/org-mode-setup))
 
-      ;; Set faces for heading levels
-      (dolist
-        (face '(
-          (org-level-1 . 1.3)
-          (org-level-2 . 1.15)
-          (org-level-3 . 1.1)
-          (org-level-4 . 1.0)
-          (org-level-5 . 1.1)
-          (org-level-6 . 1.1)
-          (org-level-7 . 1.1)
-          (org-level-8 . 1.1)))
-        (set-face-attribute (car face) nil
-          :font "Source Sans Pro"
-          :weight 'regular
-          :height (cdr face)))
-
-      ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-      (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
-      (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
-      (set-face-attribute 'org-table nil :inherit '(shadow fixed-pitch))
-      (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-      (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-      (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-      (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+  (defun org-src-format ()
+    "Replace
+    1. `C-c '` to call `org-edit-special`
+    2. `C-x h` to mark all the source code
+    3. `TAB` to format it
+    into one step."
+    (interactive)
+    (when (org-in-src-block-p)
+      (org-edit-special)
+      (indent-region (point-min) (point-max))
+      (org-edit-src-exit)))
+  (bind-keys :map org-mode-map
+             ("C-c C-<tab>" . org-src-format)
+             ;; C-tab(original 'org-force-cycle-archived) to show the element
+             ;; in another window(simpler version of org-panes.el)
+             ;; then M-PageUp/Down to scroll another window
+             ("C-<tab>" . org-tree-to-indirect-buffer)
+             )
 #+end_src
 
 ** Org-Tempo
@@ -381,17 +463,17 @@ Use circles instead of stars for headings
     :after org
     :hook (org-mode . org-superstar-mode)
     :custom
-      (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
-      (org-hide-leading-stars t)
-      (org-superstar-item-bullet-alist
-        '((?+ . ?•)
-          (?* . ?▪)
-          (?- . ?–)))
+    (org-superstar-headline-bullets-list '("◉" "○" "●" "○" "●" "○" "●"))
+    (org-hide-leading-stars t)
+    (org-superstar-item-bullet-alist
+     '((?+ . ?•)
+       (?* . ?▪)
+       (?- . ?–)))
     :custom-face
-      (org-superstar-header-bullet ((t (:height 120)))))
+    (org-superstar-header-bullet ((t (:height 120)))))
  #+end_src
 
-** Visual-Fill-Mode
+** Visual-Fill-Column
 
 Center org mode text on the buffer
 
@@ -421,7 +503,7 @@ Call =M-x org-pomodoro= on a TODO item to start Pomodoro
 #+begin_src emacs-lisp
   (use-package magit
     :custom
-      (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 #+end_src
 
 ** Hydra
@@ -435,32 +517,40 @@ Call =M-x org-pomodoro= on a TODO item to start Pomodoro
 Projectile is a way to organize projects inside emacs. Even though =C-c= is user keybindings, it is already part of most people's configs.
 
 #+begin_src emacs-lisp
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/Docs")
-    (setq projectile-project-search-path '("~/Docs")))
-  (setq projectile-switch-project-action #'projectile-dired))
+  (use-package projectile
+    :diminish projectile-mode
+    :config (projectile-mode)
+    :custom ((projectile-completion-system 'ivy))
+    :bind-keymap
+    ("C-c p" . projectile-command-map)
+    :init
+    ;; NOTE: Set this to the folder where you keep your Git repos!
+    (when (file-directory-p "~/Docs")
+      (setq projectile-project-search-path '("~/Docs")))
+    (setq projectile-switch-project-action #'projectile-dired))
 #+end_src
 
 ** Projectile-Counsel
 
 #+begin_src emacs-lisp
- (use-package counsel-projectile
-   :after counsel
-   :config (counsel-projectile-mode))
+  (use-package counsel-projectile
+    :after counsel
+    :config (counsel-projectile-mode))
 #+end_src
 
 ** Treemacs
 
-#+begin_example emacs-lisp
-  (use-package treemacs)
-#+end_example
+#+begin_src emacs-lisp
+  (use-package treemacs
+    :bind
+    (:map global-map
+          ("M-0"       . treemacs-select-window)
+          ("C-x t 1"   . treemacs-delete-other-windows)
+          ("C-x t t"   . treemacs)
+          ("C-x t B"   . treemacs-bookmark)
+          ("C-x t C-t" . treemacs-find-file)
+          ("C-x t M-t" . treemacs-find-tag)))
+#+end_src
 
 ** Treemacs-Projectile
 
@@ -474,7 +564,7 @@ Projectile is a way to organize projects inside emacs. Even though =C-c= is user
   (use-package treemacs-magit)
 #+end_example
 
-* Ivy
+* Navigation
 
 ** Counsel
 
@@ -506,7 +596,7 @@ Swap normal Emacs buffer navigation with Counsel
     :init (ivy-rich-mode 1))
 #+end_src
 
-* Autocompletion
+* Auto-completion
 
 ** Company
 
@@ -517,15 +607,88 @@ Company is an autocompletion tool for Emacs
     :diminish
     :init (global-company-mode)
     :custom
-      (company-idle-delay 0.3)
-      (company-minimum-prefix-length 2)
-      (company-backends
-        '((company-files
-           company-keywords
-           company-capf
-           company-dabbrev-code
-           company-etags
-           company-dabbrev))))
+    (company-idle-delay 0.3)
+    (company-minimum-prefix-length 2)
+    (company-backends
+     '((company-files
+        company-keywords
+        company-capf
+        company-dabbrev-code
+        company-etags
+        company-dabbrev))))
+#+end_src
+
+** Company-Box
+
+Company fronted, used for aligning boxes in mixed pitch mode
+
+#+begin_src emacs-lisp
+  (use-package company-box
+    :hook (company-mode . company-box-mode))
+#+end_src
+** Company-Powershell
+
+A powershell backend for Company
+
+#+begin_src emacs-lisp
+  (use-package company-powershell
+    :ensure quelpa
+    :quelpa (company-powershell
+             :fetcher github
+             :repo "N8-Doge/company-powershell"
+             :files ":defaults" "*.ps1"))
+#+end_src
+
+** Flycheck
+
+Flycheck marks improper syntax
+
+#+begin_src emacs-lisp
+  (use-package flycheck
+    :hook (prog-mode . flycheck-mode))
+#+end_src
+
+** Flyspell
+
+Spellcheck built into Emacs
+
+#+begin_src emacs-lisp
+  (use-package flyspell
+    :hook
+    (text-mode . flyspell-mode)
+    (prog-mode . flyspell-prog-mode)
+    :custom
+    (flyspell-correct-highlight nil)
+    (ispell-dictionary "en_US")
+    (ispell-program-name "hunspell")
+    (ispell-hunspell-dict-paths-alist
+     '(("en_US" "C:\\Hunspell\\en_US.aff")
+       ("default" "C:\\Hunspell\\default.aff")))
+    :custom-face
+    (tooltip ((t (:family "Fira Code Retina" :height 120)))))
+#+end_src
+
+** Flyspell-Correct
+
+#+begin_src emacs-lisp
+  (use-package flyspell-correct
+    :after flyspell
+    :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper)))
+#+end_src
+
+** Meghanada
+
+Java method provider using Company and Flycheck
+
+#+begin_src emacs-lisp
+  (use-package meghanada)
+#+end_src
+
+** Smartparens
+
+#+begin_src emacs-lisp
+  (use-package smartparens
+    :init (smartparens-global-mode))
 #+end_src
 
 ** Yasnippet
@@ -554,55 +717,25 @@ Configure Yasnippet to work with Company
   (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends))
 #+end_src
 
-** Flycheck
-
-Flycheck marks improper syntax
-
-#+begin_src emacs-lisp
-  (use-package flycheck
-    :hook (prog-mode . flycheck-mode))
-#+end_src
-
-** Meghanada
-
-Java method provider using Company and Flycheck
-
-#+begin_src emacs-lisp
-  (use-package meghanada)
-#+end_src
-
-** Company-Powershell
-
-A powershell backend for Company
-
-#+begin_src emacs-lisp
-  (use-package company-powershell
-    :ensure quelpa
-    :quelpa (company-powershell
-              :fetcher github
-              :repo "N8-Doge/company-powershell"
-              :files ":defaults" "*.ps1"))
-#+end_src
-
 * Major Mode Hooks
 
 ** Java
 
 #+begin_src emacs-lisp
   (add-hook 'java-mode-hook
-    (lambda ()
-      (meghanada-mode 1)
-      (setq c-basic-offset 2)
-      (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
+            (lambda ()
+              (meghanada-mode 1)
+              (setq c-basic-offset 2)
+              (add-hook 'before-save-hook 'meghanada-code-beautify-before-save)))
 #+end_src
 
 ** PS
 
 #+begin_src emacs-lisp
   (add-hook 'ps-mode-hook
-    (lambda ()
-      (setq c-basic-offset 4)
-      (add-to-list 'company-backends 'company-powershell)))
+            (lambda ()
+              (setq c-basic-offset 2)
+              (add-to-list 'company-backends 'company-powershell)))
 #+end_src
 
 * PDF Viewing
@@ -642,24 +775,24 @@ Elcord is an Emacs rich presence for Discord
 #+begin_src emacs-lisp
   (use-package elcord
     :config
-      (defun elcord--details-and-state ()
-        "No line numbers"
-        (let ((activity (list
-          (cons "details" (format "Editing %s" (buffer-name)))
-          (cons "state" (format "Major mode: %s" (elcord--mode-text))))))
-          (when elcord-display-elapsed
-            (push (list "timestamps" (cons "start" elcord--startup-time)) activity))
-          activity)))
+    (defun elcord--details-and-state ()
+      "No line numbers"
+      (let ((activity (list
+                       (cons "details" (format "Editing %s" (buffer-name)))
+                       (cons "state" (format "Major mode: %s" (elcord--mode-text))))))
+        (when elcord-display-elapsed
+          (push (list "timestamps" (cons "start" elcord--startup-time)) activity))
+        activity)))
 #+end_src
 
 ** Startup Message
 
 #+begin_src emacs-lisp
   (add-hook 'emacs-startup-hook
-          (lambda ()
-            (message "*** Emacs loaded in %s with %d garbage collections."
-                     (format "%.2f seconds"
-                             (float-time
-                              (time-subtract after-init-time before-init-time)))
-                     gcs-done)))
+            (lambda ()
+              (message "*** Emacs loaded in %s, with the %s theme"
+                       (format "%.2f seconds"
+                               (float-time
+                                (time-subtract after-init-time before-init-time)))
+                       (nth 0 custom-enabled-themes))))
 #+end_src
