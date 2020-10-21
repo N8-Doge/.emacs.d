@@ -1,15 +1,15 @@
 * N8-Doge's Emacs Config
-  Based on =daviwil/runemacs= and =munen/emacs.d=, thanks to both for their tutorials  
+  Based on =daviwil/runemacs= and =munen/emacs.d=, thanks to both for their tutorials
 
 ** Install
-   Run in =.emacs.d=:  
+   Run in =.emacs.d=:
    =git clone https://github.com/N8-Doge/.emacs.d.git=
 
 ** Windows
    To generate =.emacs.d= in the home directory, set =HKCU:\SOFTWARE\GNU\Emacs\HOME= to the path
 
    Use msys2, install the following for pdf-tools
-   #+BEGIN_SRC 
+ #+BEGIN_SRC shell
    pacman -Syu --noconfirm;
    pacman -S base-devel --noconfirm;
    pacman -S mingw-w64-x86_64-toolchain --noconfirm;
@@ -17,4 +17,17 @@
    pacman -S mingw-w64-x86_64-libpng --noconfirm;
    pacman -S mingw-w64-x86_64-poppler --noconfirm;
    pacman -S mingw-w64-x86_64-imagemagick --noconfirm;
+   pacman -S aspell --noconfirm;
+   pacman -S aspell6-en --noconfirm;
    #+END_SRC
+
+   Choco dependencies
+ #+begin_src shell
+   choco install --y zip unzip diffutils python
+   #+end_src
+
+   And add =C:\tools\msys64\usr\bin= to the path variable
+
+#+begin_src powershell
+  setx /m path "$env:path;C:\tools\msys64\usr\bin"
+#+end_src

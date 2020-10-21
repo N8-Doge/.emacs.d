@@ -4,9 +4,9 @@ This config will not be backwards compatible, and is concerned mainly with reada
 I use =use-package= in order to arrange individual packages, function userspace is =my/= unless code is borrowed.
 ** In Progress
 *** TODO Make cursor dependent on insert mode
-*** TODO Configure projectile and project directories
-*** TODO Configure Treemacs and Centaur to work with projectile
-*** TODO Configure Centaur to work with ivy
+*** DONE Configure projectile and project directories
+*** DONE Configure Treemacs and Centaur to work with projectile
+*** DONE Configure Centaur to work with ivy
 *** TODO Port config into WSL/clean up Windows dependencies
 * Early Init
 
@@ -265,12 +265,22 @@ Dependency for =doom-modeline=.
     (all-the-icons-install-fonts t))
 #+end_src
 
+** Bar Cursor
+
+Only use a block cursor in overwrite mode
+
+#+begin_src emacs-lisp
+  (use-package bar-cursor
+    :init (bar-cursor-mode))
+#+end_src
+
 ** Centaur-Tabs
 
 #+begin_src emacs-lisp
   (use-package centaur-tabs
     :demand
     :config
+    (centaur-tabs-group-by-projectile-project)
     (centaur-tabs-mode t)
     (centaur-tabs-change-fonts "Fira Code Retina" 120)
     :custom
@@ -346,7 +356,6 @@ Minions organizes the minor modes listed on the modeline
        doom-nord
        doom-opera
        doom-palenight
-       doom-snazzy
        doom-spacegrey
        doom-tomorrow-night
        doom-wilmersdorf))
@@ -354,24 +363,6 @@ Minions organizes the minor modes listed on the modeline
 #+end_src
 
 * Org
-
-** Cursor
-
-Code borrowed from prot, enable line cursor in org mode
-
-#+begin_src emacs-lisp
-  (define-minor-mode my/cursor-type-mode
-    "Toggle between static block and pulsing bar cursor."
-    :init-value nil
-    :global t
-    (if my/cursor-type-mode
-        (progn
-          (setq-local cursor-type '(bar . 2)
-                      cursor-in-non-selected-windows 'hollow))
-      (dolist (local '(cursor-type
-                       cursor-in-non-selected-windows))
-        (kill-local-variable `,local))))
-#+end_src
 
 ** Ox
 
@@ -388,13 +379,6 @@ Code borrowed from prot, enable line cursor in org mode
     (org-indent-mode)
     (variable-pitch-mode 1)
     (visual-line-mode 1)
-    (my/cursor-type-mode 1)
-    (setq org-ellipsis " ▾"
-          org-src-tab-acts-natively nil
-          org-src-fontify-natively nil)
-    ;;(font-lock-add-keywords 'org-mode
-    ;;'(("^ *\\([-]\\) "
-    ;;(0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "●"))))))
 
     ;; Set faces for heading levels
     (dolist
@@ -422,6 +406,14 @@ Code borrowed from prot, enable line cursor in org mode
     (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
 
   (use-package org
+    :config
+    (setq org-ellipsis " ▾"
+          org-src-tab-acts-natively t
+          org-src-fontify-natively t)
+    (efs/org-mode-setup)
+    ;;(font-lock-add-keywords 'org-mode
+    ;;'(("^ *\\([-]\\) "
+    ;;(0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "●"))))))
     :hook
     (org-mode . efs/org-mode-setup)
     (theme-looper-post-switch . efs/org-mode-setup))
@@ -514,7 +506,7 @@ Call =M-x org-pomodoro= on a TODO item to start Pomodoro
 
 ** Projectile
 
-Projectile is a way to organize projects inside emacs. Even though =C-c= is user keybindings, it is already part of most people's configs.
+Projectile is a way to organize projects inside emacs.
 
 #+begin_src emacs-lisp
   (use-package projectile
@@ -525,8 +517,8 @@ Projectile is a way to organize projects inside emacs. Even though =C-c= is user
     ("C-c p" . projectile-command-map)
     :init
     ;; NOTE: Set this to the folder where you keep your Git repos!
-    (when (file-directory-p "~/Docs")
-      (setq projectile-project-search-path '("~/Docs")))
+    (when (file-directory-p "~/Repositories")
+      (setq projectile-project-search-path '("~/Repositories")))
     (setq projectile-switch-project-action #'projectile-dired))
 #+end_src
 
@@ -654,18 +646,14 @@ Spellcheck built into Emacs
 
 #+begin_src emacs-lisp
   (use-package flyspell
+    ;;:custom-face (tooltip ((t (:family "Fira Code Retina" :height 120))))
     :hook
     (text-mode . flyspell-mode)
     (prog-mode . flyspell-prog-mode)
     :custom
     (flyspell-correct-highlight nil)
-    (ispell-dictionary "en_US")
-    (ispell-program-name "hunspell")
-    (ispell-hunspell-dict-paths-alist
-     '(("en_US" "C:\\Hunspell\\en_US.aff")
-       ("default" "C:\\Hunspell\\default.aff")))
-    :custom-face
-    (tooltip ((t (:family "Fira Code Retina" :height 120)))))
+    (ispell-program-name "aspell")
+    (ispell-dictionary "english"))
 #+end_src
 
 ** Flyspell-Correct
