@@ -1,5 +1,5 @@
 * N8-Doge's Emacs Config
-  Based on =daviwil/runemacs= and =munen/emacs.d=, thanks to both for their tutorials
+  Based on =daviwil/emacs-from-scratch= and =munen/emacs.d=, thanks to both for their tutorials
 
 ** Install
    Run in =.emacs.d=:

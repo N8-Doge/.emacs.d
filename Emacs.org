@@ -3,7 +3,7 @@
 This config will not be backwards compatible, and is concerned mainly with readability and not startup speed.
 I use =use-package= in order to arrange individual packages, function userspace is =my/= unless code is borrowed.
 ** In Progress
-*** TODO Make cursor dependent on insert mode
+*** DONE Make cursor dependent on insert mode
 *** DONE Configure projectile and project directories
 *** DONE Configure Treemacs and Centaur to work with projectile
 *** DONE Configure Centaur to work with ivy
@@ -163,6 +163,14 @@ Scroll bar cannot be disabled in =early-init.el=
   (toggle-frame-fullscreen)
 #+end_src
 
+** Set Window title
+
+Display buffer and mode in window title if ever not fullscreen
+
+#+begin_src emacs-lisp
+  (setq-default frame-title-format '("%b [%m]"))
+#+end_src
+
 * Enhancements
 
 Anything additive to the user
@@ -177,6 +185,13 @@ Anything additive to the user
 
 #+begin_src emacs-lisp
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
+#+end_src
+
+** Dired
+
+#+begin_src emacs-lisp
+  (put 'dired-find-alternate-file 'disabled nil)
+  (setq-default dired-listing-switches "-alh")
 #+end_src
 
 ** Which-Key
@@ -227,11 +242,11 @@ Configure all of the visual elements
 
 ** Window Alpha
 
-Lowers the alpha of the background
+Lowers the alpha of the background, turned off for now
 
-#+begin_src emacs-lisp
-  (set-frame-parameter (selected-frame) 'alpha '(95 . 95))
-#+end_src
+#+begin_example emacs-lisp
+  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+#+end_example
 
 ** Line Numbers
 
@@ -342,7 +357,7 @@ Minions organizes the minor modes listed on the modeline
 
 #+begin_src emacs-lisp
   (use-package theme-looper
-    :config
+    :init
     (theme-looper-set-favorite-themes
      '(doom-one
        doom-vibrant
@@ -359,7 +374,7 @@ Minions organizes the minor modes listed on the modeline
        doom-spacegrey
        doom-tomorrow-night
        doom-wilmersdorf))
-    (theme-looper-enable-random-theme))
+    :config (theme-looper-enable-random-theme))
 #+end_src
 
 * Org
@@ -477,6 +492,13 @@ Center org mode text on the buffer
 
   (use-package visual-fill-column
     :hook (org-mode . efs/org-mode-visual-fill))
+#+end_src
+
+** Org-Download
+
+#+begin_src emacs-lisp
+  (use-package org-download
+    :hook (dired-mode . org-download-enable))
 #+end_src
 
 ** Org-Pomodoro
@@ -645,11 +667,14 @@ Flycheck marks improper syntax
 Spellcheck built into Emacs
 
 #+begin_src emacs-lisp
+  (defun my/flyspell-prog ()
+    (setq ispell-extra-args '("--camel-case"))
+    (flyspell-prog-mode))
   (use-package flyspell
     ;;:custom-face (tooltip ((t (:family "Fira Code Retina" :height 120))))
     :hook
     (text-mode . flyspell-mode)
-    (prog-mode . flyspell-prog-mode)
+    (prog-mode . my/flyspell-prog)
     :custom
     (flyspell-correct-highlight nil)
     (ispell-program-name "aspell")
@@ -676,7 +701,8 @@ Java method provider using Company and Flycheck
 
 #+begin_src emacs-lisp
   (use-package smartparens
-    :init (smartparens-global-mode))
+    :init (smartparens-global-mode)
+    :config (sp-pair "/*" "*/"))
 #+end_src
 
 ** Yasnippet
@@ -684,10 +710,11 @@ Java method provider using Company and Flycheck
 Yasnippet allows for code block insertion based on templates
 
 #+begin_src emacs-lisp
-  (use-package yasnippet
-    :diminish
-    :init (yas-global-mode 1)
-    :config (add-to-list 'load-path "~/.emacs.d/plugins/yasnippet"))
+    (use-package yasnippet
+      :diminish
+      :init (yas-global-mode 1)
+      :custom (yas-snippet-dirs '("~/.cache/emacs/snippets"
+                                  "~/.emacs.d/snippets")))
 #+end_src
 
 Configure Yasnippet to work with Company
@@ -726,7 +753,7 @@ Configure Yasnippet to work with Company
               (add-to-list 'company-backends 'company-powershell)))
 #+end_src
 
-* PDF Viewing
+* Document Viewing
 
 ** PDF-Tools
 
@@ -747,6 +774,33 @@ Configure Yasnippet to work with Company
     :hook (pdf-view-mode . pdf-continuous-scroll-mode))
 #+end_src
 
+** Doc-View
+
+#+begin_src emacs-lisp
+  (use-package doc-view
+    :custom
+    (doc-view-continuous t)
+    (doc-view-ghostscript-program "mgs.exe")
+    (doc-view-pdf->png-converter-function 'doc-view-pdf->png-converter-ghostscript)
+    (doc-view-pdftotext-program "miktex-pdftotext.exe")
+    (doc-view-dvipdfm-program "dvipdfm.exe")
+    (doc-view-odf->pdf-converter-program "soffice.exe")
+    (doc-view-odf->pdf-converter-function 'doc-view-odf->pdf-converter-soffice))
+#+end_src
+
+** Conversion Functions
+
+#+begin_src emacs-lisp
+  (defun my/odt-to-pdf (file)
+    (interactive "fFile to convert: ")
+    (message "Converting %s" file)
+    ;;command structure soffice --convert-to pdf test.ppt --headless
+    (message "Finished conversion %s"
+             (shell-command-to-string
+              (format "soffice --convert-to pdf \"%s\" --headless"
+                      file))))
+    #+end_src
+
 * Misc.
 
 ** Powershell
@@ -762,15 +816,34 @@ Elcord is an Emacs rich presence for Discord
 
 #+begin_src emacs-lisp
   (use-package elcord
-    :config
-    (defun elcord--details-and-state ()
-      "No line numbers"
-      (let ((activity (list
-                       (cons "details" (format "Editing %s" (buffer-name)))
-                       (cons "state" (format "Major mode: %s" (elcord--mode-text))))))
-        (when elcord-display-elapsed
-          (push (list "timestamps" (cons "start" elcord--startup-time)) activity))
-        activity)))
+    :defer
+    :hook (after-save . my/run-elcord)
+    :config (my/run-elcord))
+#+end_src
+
+Only run elcord if Discord is already running, retry every time a file is saved
+
+#+begin_src emacs-lisp
+  (defun my/run-elcord ()
+    (cond
+     ((string-equal system-type "windows-nt")
+      (progn
+        (unless
+          (string-equal
+             (shell-command-to-string "ps -W | findstr Discord") "")
+          (elcord-mode 1))))))
+#+end_src
+
+Don't have elcord send line numbers to Discord
+
+#+begin_src emacs-lisp
+  (defun elcord--details-and-state ()
+    (let ((activity (list
+                     (cons "details" (format "Editing %s" (buffer-name)))
+                     (cons "state" (format "Major mode: %s" (elcord--mode-text))))))
+      (when elcord-display-elapsed
+        (push (list "timestamps" (cons "start" elcord--startup-time)) activity))
+      activity))
 #+end_src
 
 ** Startup Message
